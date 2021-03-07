@@ -1,0 +1,1 @@
+web: sh setup.sh && streamlit run deep_learning_object_detection.py
