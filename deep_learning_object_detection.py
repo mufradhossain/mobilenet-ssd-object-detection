@@ -89,7 +89,7 @@ def main():
             """
 	st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
 
-	st.title("mobilenet-ssd")
+	#st.title("mobilenet-ssd")
 	html_temp = """
 	<body style="background-color:red;">
 	<div style="background-color:#FACA2B ;padding:10px">
@@ -113,11 +113,21 @@ def main():
 
 		newcap = [] 
 		newper=[]
+		bcolor=[]
 		j=0
 		for item in cap:
 			if item not in newcap: 
 				newcap.append(item) 
 				newper.append(per[j])
+				if (per[j]<40):
+					bcolor.append("red")
+				elif (per[j] >40 and per[j] < 60):
+					bcolor.append("orange")
+				elif (per[j] > 60 and per[j]<80):
+					bcolor.append("yellow")
+				else:
+					bcolor.append("green")
+
 			j+=1
 
 		objclasses = newcap		
@@ -127,14 +137,16 @@ def main():
 
 		for x in newper:
 			outofhund.append(100-x)
-		plt.barh(newcap, newper, color="#238823")  
-		plt.barh(newcap,outofhund, left=newper , color="#FFBF00")
+		#plt.barh(newcap, newper, color="#238823")  
+		plt.barh(newcap, newper, color=bcolor)  
+		plt.barh(newcap,outofhund, left=newper , color="grey")
 		for i, v in enumerate(newper):
-			plt.text(v -15, i-0.05, str(v)+"%", color='white', fontweight='bold')
+			plt.text(v -15, i-0.05, str(v)+"%", color='black', fontweight='bold')
 		plt.xlabel('Confidence Level')  
+		plt.rcParams['ytick.labelsize']=16
 		plt.yticks(rotation=90)
 		plt.ylabel('Objects')
-		col3.header("Percentage")
+		col3.header("Confidence")
 		col3.pyplot(use_column_width=True)
 
 if __name__ == '__main__':
