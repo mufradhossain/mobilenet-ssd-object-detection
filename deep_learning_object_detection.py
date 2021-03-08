@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import streamlit as st
 from PIL import Image
+import matplotlib.pyplot as plt
 
 # initialize the list of class labels MobileNet SSD was trained to
 # detect, then generate a set of bounding box colors for each class
@@ -31,6 +32,7 @@ def after(our_image):
 	net.setInput(blob)
 	detections = net.forward()
 	result=[]
+	perres=[]
 	# loop over the detections
 	for i in np.arange(0, detections.shape[2]):
 		# extract the confidence (i.e., probability) associated with the
@@ -48,7 +50,10 @@ def after(our_image):
 			(startX, startY, endX, endY) = box.astype("int")
 
 			# display the prediction
-			label = "{}: {:.2f}%".format(CLASSES[idx], confidence * 100)
+			label = "{}".format(CLASSES[idx])
+			per = confidence*100
+			perres.append(round(per,2))
+			
 			result.append(str(label))
 			cv2.rectangle(image, (startX, startY), (endX, endY),
 				COLORS[idx], 2)
@@ -57,11 +62,24 @@ def after(our_image):
 				cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
 
 	#return the output image
-	return image , result
+	return image , result , perres
 
-
+def _max_width_():
+    max_width_str = f"max-width: 2000px;"
+    st.markdown(
+        f"""
+    <style>
+    .reportview-container .main .block-container{{
+        {max_width_str}
+    }}
+    </style>    
+    """,
+        unsafe_allow_html=True,
+    )
 
 def main():
+
+	_max_width_()
 
 	hide_streamlit_style = """
             <style>
@@ -70,26 +88,54 @@ def main():
             </style>
             """
 	st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
+
 	st.title("mobilenet-ssd")
 	html_temp = """
 	<body style="background-color:red;">
-	<div style="background-color:#FE615A ;padding:10px">
+	<div style="background-color:#FACA2B ;padding:10px">
 	<h2 style="color:white;text-align:center;">Object Detection Based on the Mobilenet-ssd Model</h2>
 	</div>
 	</body>
 	"""
 	st.markdown(html_temp, unsafe_allow_html=True)
+	st.set_option('deprecation.showPyplotGlobalUse', False)
 
 	image_file = st.file_uploader("Upload Image to Detect Objects", type=['jpg', 'png', 'jpeg'])
 	if image_file is not None:
 
+		col1, col2, col3 = st.beta_columns(3)
+		col1.header("Image")
+		col1.image(image_file)
 		imag = Image.open(image_file)
-		st.image(image_file)
+		res , cap, per=after(imag)
+		col2.header("Objects")
+		col2.image(res)
 
-	if st.button("Detect Objects"):
-		res , cap=after(imag)
-		st.image(res)
-		st.text("Objects: " + str(cap))
+		newcap = [] 
+		newper=[]
+		j=0
+		for item in cap:
+			if item not in newcap: 
+				newcap.append(item) 
+				newper.append(per[j])
+			j+=1
+
+		objclasses = newcap		
+		outofhund = []
+
+		plt.figure(figsize=(10,8))
+
+		for x in newper:
+			outofhund.append(100-x)
+		plt.barh(newcap, newper, color="#238823")  
+		plt.barh(newcap,outofhund, left=newper , color="#FFBF00")
+		for i, v in enumerate(newper):
+			plt.text(v -15, i-0.05, str(v)+"%", color='white', fontweight='bold')
+		plt.xlabel('Confidence Level')  
+		plt.yticks(rotation=90)
+		plt.ylabel('Objects')
+		col3.header("Percentage")
+		col3.pyplot(use_column_width=True)
 
 if __name__ == '__main__':
     main()
