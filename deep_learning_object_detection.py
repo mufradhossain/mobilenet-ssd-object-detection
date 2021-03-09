@@ -21,7 +21,7 @@ net = cv2.dnn.readNetFromCaffe("MobileNetSSD_deploy.prototxt.txt", "MobileNetSSD
 # (note: normalization is done via the authors of the MobileNet SSD
 # implementation)
 
-def after(our_image):
+def after(our_image,conf):
 
 	image = np.array(our_image)
 	(h, w) = image.shape[:2]
@@ -41,7 +41,7 @@ def after(our_image):
 
 		# filter out weak detections by ensuring the `confidence` is
 		# greater than the minimum confidence
-		if confidence > 0.2:
+		if confidence > conf:
 			# extract the index of the class label from the `detections`,
 			# then compute the (x, y)-coordinates of the bounding box for
 			# the object
@@ -88,12 +88,11 @@ def main():
             </style>
             """
 	st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
-
-	#st.title("mobilenet-ssd")
 	html_temp = """
 	<body style="background-color:red;">
-	<div style="background-color:#FACA2B ;padding:10px">
+	<div style="background-color:#1A4645 ;padding:10px">
 	<h2 style="color:white;text-align:center;">Object Detection Based on the Mobilenet-ssd Model</h2>
+	<p style="color:white;text-align:center;"> This model can detect background, aeroplane, bicycle, bird, boat, bottle, bus, car, cat, chair, cow, diningtable, dog, horse, motorbike, person, pottedplant, sheep, sofa, train, tvmonitor from a given image</p>
 	</div>
 	</body>
 	"""
@@ -103,14 +102,18 @@ def main():
 	image_file = st.file_uploader("Upload Image to Detect Objects", type=['jpg', 'png', 'jpeg'])
 	if image_file is not None:
 
+		conf= st.slider("Confidence Threshold", min_value=0.0,max_value=1.0, value=0.2,step=0.01)
+
 		col1, col2, col3 = st.beta_columns(3)
 		col1.header("Image")
 		col1.image(image_file)
 		imag = Image.open(image_file)
-		res , cap, per=after(imag)
+		res , cap, per=after(imag,conf)
 		col2.header("Objects")
 		col2.image(res)
-
+		idx   = np.flip(np.argsort(per))
+		per = np.array(per)[idx]
+		cap = np.array(cap)[idx]
 		newcap = [] 
 		newper=[]
 		bcolor=[]
@@ -137,7 +140,6 @@ def main():
 
 		for x in newper:
 			outofhund.append(100-x)
-		#plt.barh(newcap, newper, color="#238823")  
 		plt.barh(newcap, newper, color=bcolor)  
 		plt.barh(newcap,outofhund, left=newper , color="grey")
 		for i, v in enumerate(newper):
